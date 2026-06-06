@@ -322,7 +322,8 @@ $list = runQuery($conn, "SELECT * FROM sales_order ORDER BY so_id DESC");
         <a href="customer_list.php">Customers</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
-	<a href="sales_invoice.php" class="active">Sales Invoice</a>
+		<a href="sales_invoice.php" class="active">Sales Invoice</a>
+		<a href="report.php">Report</a>
     </div>
 
     <div class="main-content">
