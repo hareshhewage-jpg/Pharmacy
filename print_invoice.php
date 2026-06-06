@@ -102,7 +102,7 @@ td{
 <div class="invoice-box">
 
 <div class="header">
-<h2>PharmaCare Pharmacy</h2>
+<h2>Drugs4U Pharmacy</h2>
 <p>INVOICE</p>
 </div>
 
