@@ -350,6 +350,7 @@ $vendor_list = runQuery($conn, "SELECT * FROM vendor_master ORDER BY vendor_id D
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
         <a href="sales_invoice.php">Sales Invoice</a>
+        <a href="report.php">Report</a>
     </div>
 
     <div class="main-content">
