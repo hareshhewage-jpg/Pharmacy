@@ -352,5 +352,92 @@ $vendor_list = runQuery($conn, "SELECT * FROM vendor_master ORDER BY vendor_id D
         <a href="sales_invoice.php">Sales Invoice</a>
         <a href="report.php" class="active">Report</a>
     </div>
+    <div class="main-content">
+        <div class="top-bar">
+            <h2>Management Reports Panel</h2>
+        </div>
+
+        <div class="container">
+            <div class="report-grid">
+                
+                <div class="report-card">
+                    <h3>Sales Summary Report</h3>
+                    <button class="report-btn" onclick="openPopup('sales_report_view.php','Sales Summary Report')">
+                        Open Report Options
+                    </button>
+                </div>
+
+                <div class="report-card">
+                    <h3>Item Wise Sales Report</h3>
+                    <button class="report-btn" onclick="openPopup('item_sales_report_view.php','Item Wise Sales Report')">
+                        Open Report Options
+                    </button>
+                </div>
+
+                <div class="report-card grn-card">
+                    <h3>GRN No Wise Report</h3>
+                    <button class="report-btn" onclick="openPopup('grn_no_report_view.php','GRN No Wise Summary Report')">
+                        Open Report Options
+                    </button>
+                </div>
+
+                <div class="report-card grn-card">
+                    <h3>Item Wise GRN Report</h3>
+                    <button class="report-btn" onclick="openPopup('grn_item_report_view.php','Item Wise GRN Report')">
+                        Open Report Options
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup" id="reportPopup">
+    <div class="popup-content">
+        <span class="close-btn" onclick="closePopup()">×</span>
+        
+        <h3 id="popupTitle" style="margin-top:0; color:#334155; margin-bottom: 20px;">Select Parameter Boundary</h3>
+
+        <form id="reportForm" method="GET" target="_blank">
+            <div class="popup-form-group">
+                <label>From Date</label>
+                <input type="date" name="from_date" required>
+            </div>
+
+            <div class="popup-form-group">
+                <label>To Date</label>
+                <input type="date" name="to_date" required>
+            </div>
+
+            <button type="submit" class="generate-btn">
+                Generate Secure Report
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPopup(reportPage, title) {
+    document.getElementById('reportPopup').style.display = 'flex';
+    document.getElementById('reportForm').action = reportPage;
+    document.getElementById('popupTitle').innerText = title;
+    document.getElementById('reportForm').reset();
+}
+
+function closePopup() {
+    document.getElementById('reportPopup').style.display = 'none';
+}
+
+// Intercept dispatch event sequence smoothly without corrupting current master process view thread state
+document.getElementById('reportForm').onsubmit = function() {
+    setTimeout(() => {
+        closePopup();
+    }, 300);
+};
+</script>
+
+
+
 </body>
 </html>
