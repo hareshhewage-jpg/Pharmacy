@@ -582,10 +582,12 @@ input, select{
         <a href="item.php">Items</a>
 	    <a href="vendor.php">Vendor</a>
         <a href="customer_list.php">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php" class="active">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
-		<a href="sales_invoice.php">Sales Invoice</a>
-		<a href="report.php">Report</a>
+	    <a href="sales_invoice.php">Sales Invoice</a>
+        <a href="report.php">Report</a>
+        <a href="login.php">Logout</a>
     </div>
 
     <div class="main-content">
@@ -693,7 +695,7 @@ input, select{
                                     while($it=mysqli_fetch_assoc($items)){
                                     ?>
                                     <option value="<?= $it['item_no'] ?>" data-name="<?= $it['item_name'] ?>" data-cost="<?= $it['unit_cost'] ?>" <?= ($row['item_no']==$it['item_no']) ? 'selected' : '' ?>>
-                                        <?= $it['item_no'] ?>
+                                    <?= $it['item_no'] ?> - <?= $it['item_name'] ?>
                                     </option>
                                     <?php } ?>
                                 </select>
@@ -787,7 +789,7 @@ function addRow(){
     <td>
         <select name="item_no[]" onchange="setItem(this)">
             <option value="">Select</option>
-            ${items.map(i=>`<option value="${i.no}" data-name="${i.name}" data-cost="${i.cost}">${i.no}</option>`).join('')}
+            ${items.map(i=>`<option value="${i.no}" data-name="${i.name}" data-cost="${i.cost}">${i.no} - ${i.name}</option>`).join('')}
         </select>
     </td>
     <td><input name="item_name[]"></td>
