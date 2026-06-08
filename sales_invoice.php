@@ -33,15 +33,43 @@ if(mysqli_num_rows($res) > 0){
 /* ================= SAVE INVOICE ================= */
 if(isset($_POST['save_invoice'])){
 
-    $so_no = $_POST['so_no'];
-    $so_date = $_POST['so_date'];
-    $cus_id = $_POST['cus_id'];
-    $cus_name = $_POST['cus_name'];
-    $address = $_POST['address'];
-    $city = $_POST['city'];
+    // Sanitize basic form inputs to guard against SQL injection
+    $so_no = mysqli_real_escape_string($conn, $_POST['so_no']);
+    $so_date = mysqli_real_escape_string($conn, $_POST['so_date']);
+    $cus_id = mysqli_real_escape_string($conn, $_POST['cus_id']);
+    $cus_name = mysqli_real_escape_string($conn, $_POST['cus_name']);
+    $address = mysqli_real_escape_string($conn, $_POST['address']);
+    $city = mysqli_real_escape_string($conn, $_POST['city']);
 
     $total_invoice = 0;
 
+    /* ---------------- BACKEND STOCK VALIDATION LOOP ---------------- */
+    for($i = 0; $i < count($_POST['item_no']); $i++){
+        if($_POST['item_no'][$i] == '') continue;
+
+        $item_no = mysqli_real_escape_string($conn, $_POST['item_no'][$i]);
+        $qty = (int)$_POST['qty'][$i];
+
+        // Fetch current live stock amount from the database
+        $stockCheckQuery = runQuery($conn, "SELECT stock_qty, item_name FROM item_master WHERE item_no='$item_no'");
+        if(mysqli_num_rows($stockCheckQuery) > 0){
+            $stockRow = mysqli_fetch_assoc($stockCheckQuery);
+            $current_stock = (int)$stockRow['stock_qty'];
+            $db_item_name = $stockRow['item_name'];
+
+            // Stop the invoice process immediately if requested quantity exceeds current stock
+            if($qty > $current_stock) {
+                echo "<script>
+                    alert('Error: Insufficient stock for \"$db_item_name\". Available stock: $current_stock. Requested: $qty.');
+                    window.history.back();
+                </script>";
+                exit;
+            }
+        }
+    }
+    /* ---------------------------------------------------------------- */
+
+    // Create Base Invoice Record
     runQuery($conn, "INSERT INTO sales_order
     (so_no, so_date, cus_id, cus_name, address, city, total_amount)
     VALUES
@@ -51,8 +79,8 @@ if(isset($_POST['save_invoice'])){
 
         if($_POST['item_no'][$i] == '') continue;
 
-        $item_no = $_POST['item_no'][$i];
-        $item_name = $_POST['item_name'][$i];
+        $item_no = mysqli_real_escape_string($conn, $_POST['item_no'][$i]);
+        $item_name = mysqli_real_escape_string($conn, $_POST['item_name'][$i]);
         $price = (float)$_POST['price'][$i];
         $qty = (int)$_POST['qty'][$i];
         $total = (float)$_POST['total'][$i];
@@ -274,6 +302,15 @@ $list = runQuery($conn, "SELECT * FROM sales_order ORDER BY so_id DESC");
             flex-wrap: wrap;
         }
 
+        /* Helper label for inline dynamic stock display */
+        .stock-label {
+            display: block;
+            font-size: 11px;
+            color: #0f766e;
+            margin-top: 2px;
+            font-weight: bold;
+        }
+
         /* Media Queries for Mobile/Tablet views */
         @media (max-width: 768px) {
             .wrapper {
@@ -318,12 +355,14 @@ $list = runQuery($conn, "SELECT * FROM sales_order ORDER BY so_id DESC");
         <h2>💊 Drugs4U</h2>
         <a href="dashboard.php">Dashboard</a>
         <a href="item.php">Items</a>
-	    <a href="vendor.php">Vendor</a>
+        <a href="vendor.php">Vendor</a>
         <a href="customer_list.php">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
-		<a href="sales_invoice.php" class="active">Sales Invoice</a>
-		<a href="report.php">Report</a>
+        <a href="sales_invoice.php" class="active">Sales Invoice</a>
+        <a href="report.php">Report</a>
+        <a href="login_emp.php">Logout</a> 
     </div>
 
     <div class="main-content">
@@ -370,7 +409,7 @@ $list = runQuery($conn, "SELECT * FROM sales_order ORDER BY so_id DESC");
                 <span class="close-btn" onclick="closePopup()">×</span>
                 <h3>Create Sales Invoice</h3>
 
-                <form method="POST">
+                <form method="POST" onsubmit="return validateFormStock()">
                     <div class="grid">
                         <div>
                             <label>Invoice No</label>
@@ -437,7 +476,7 @@ $list = runQuery($conn, "SELECT * FROM sales_order ORDER BY so_id DESC");
 </div>
 
 <script>
-// JSON representation of stock master items
+// JSON array populated with active stock details
 let items = [
     <?php 
     mysqli_data_seek($items, 0); 
@@ -446,7 +485,8 @@ let items = [
     {
         no: "<?= $i['item_no'] ?>",
         name: "<?= $i['item_name'] ?>",
-        price: "<?= $i['unit_price'] ?>"
+        price: "<?= $i['unit_price'] ?>",
+        stock: <?= (int)$i['stock_qty'] ?> // Injected available stock data
     },
     <?php } ?>
 ];
@@ -484,12 +524,13 @@ function addRow(){
         <td>
             <select name="item_no[]" onchange="setItem(this)">
                 <option value="">Select</option>
-                ${items.map(i => `<option value="${i.no}" data-name="${i.name}" data-price="${i.price}">${i.no}</option>`).join('')}
+                ${items.map(i => `<option value="${i.no}" data-name="${i.name}" data-price="${i.price}" data-stock="${i.stock}">${i.no} - ${i.name}</option>`).join('')}
             </select>
+            <span class="stock-label"></span>
         </td>
         <td><input name="item_name[]" readonly></td>
         <td><input name="price[]" oninput="calcTotal(this)"></td>
-        <td><input name="qty[]" oninput="calcTotal(this)"></td>
+        <td><input type="number" name="qty[]" min="1" oninput="calcTotal(this)"></td>
         <td><input name="total[]" readonly></td>
         <td><button type="button" class="del-btn" onclick="this.closest('tr').remove()">X</button></td>
     `;
@@ -499,8 +540,21 @@ function setItem(el){
     let row = el.closest("tr");
     let option = el.options[el.selectedIndex];
 
-    row.querySelector('[name="item_name[]"]').value = option.getAttribute("data-name") || '';
-    row.querySelector('[name="price[]"]').value = option.getAttribute("data-price") || '';
+    let itemName = option.getAttribute("data-name") || '';
+    let itemPrice = option.getAttribute("data-price") || '';
+    let itemStock = option.getAttribute("data-stock") || '0';
+
+    row.querySelector('[name="item_name[]"]').value = itemName;
+    row.querySelector('[name="price[]"]').value = itemPrice;
+    
+    // Display stock volume indicator next to select component
+    let stockSpan = row.querySelector('.stock-label');
+    if(el.value !== "") {
+        stockSpan.textContent = "Available: " + itemStock;
+    } else {
+        stockSpan.textContent = "";
+    }
+
     calcTotal(row.querySelector('[name="price[]"]'));
 }
 
@@ -508,8 +562,47 @@ function calcTotal(el){
     let row = el.closest("tr");
     let price = parseFloat(row.querySelector('[name="price[]"]').value) || 0;
     let qty = parseFloat(row.querySelector('[name="qty[]"]').value) || 0;
+    let option = row.querySelector('[name="item_no[]"]').options[row.querySelector('[name="item_no[]"]').selectedIndex];
+    
+    // Live frontend validation when the user types a quantity value
+    if(option && option.value !== "") {
+        let maxStock = parseInt(option.getAttribute("data-stock")) || 0;
+        if(qty > maxStock) {
+            alert("Warning: Input quantity exceeds available warehouse stock (" + maxStock + ").");
+            row.querySelector('[name="qty[]"]').value = maxStock;
+            qty = maxStock;
+        }
+    }
 
     row.querySelector('[name="total[]"]').value = (price * qty).toFixed(2);
+}
+
+/* Master Client Side Blockage Prior to Submission */
+function validateFormStock() {
+    let table = document.getElementById("invTable");
+    let rows = table.getElementsByTagName("tr");
+    
+    for (let i = 1; i < rows.length; i++) {
+        let row = rows[i];
+        let selectEl = row.querySelector('[name="item_no[]"]');
+        if(!selectEl || selectEl.value === "") continue;
+        
+        let option = selectEl.options[selectEl.selectedIndex];
+        let maxStock = parseInt(option.getAttribute("data-stock")) || 0;
+        let inputQty = parseInt(row.querySelector('[name="qty[]"]').value) || 0;
+        let itemName = row.querySelector('[name="item_name[]"]').value;
+
+        if (inputQty <= 0) {
+            alert("Please enter a valid quantity for item: " + itemName);
+            return false;
+        }
+
+        if (inputQty > maxStock) {
+            alert("Cannot save invoice. '" + itemName + "' requires " + inputQty + " items, but only " + maxStock + " are left.");
+            return false;
+        }
+    }
+    return true;
 }
 </script>
 
