@@ -21,7 +21,34 @@ $totalCustomers = mysqli_fetch_assoc($totalCustomersRes)['total'];
 $todayCustomersRes = runQuery($conn, "SELECT COUNT(*) as total FROM customer WHERE DATE(DOB)=CURDATE()");
 $todayCustomers = mysqli_fetch_assoc($todayCustomersRes)['total'];
 
-$customers = runQuery($conn, "SELECT * FROM customer ORDER BY cus_id DESC LIMIT 5");
+
+// ================= PRESCRIPTION COUNTS & DATA =================
+// 1. Dynamically detect the date column in your 'prescriptions' table to avoid SQL errors
+$columnsRes = runQuery($conn, "SHOW COLUMNS FROM prescriptions");
+$dateColumn = null;
+
+while ($col = mysqli_fetch_assoc($columnsRes)) {
+    $type = strtolower($col['Type']);
+    $name = strtolower($col['Field']);
+    // Look for common timestamp, datetime, or date field keywords
+    if (strpos($type, 'date') !== false || strpos($type, 'time') !== false || strpos($name, 'date') !== false) {
+        $dateColumn = $col['Field'];
+        break;
+    }
+}
+
+// 2. Execute target query for *only* today's count based on the found column
+if ($dateColumn) {
+    $todayPrescriptionsRes = runQuery($conn, "SELECT COUNT(*) as total FROM prescriptions WHERE DATE(`$dateColumn`) = CURDATE()");
+    $todayPrescriptions = mysqli_fetch_assoc($todayPrescriptionsRes)['total'];
+} else {
+    // Safety fallback: if no date column exists in your schema yet, show 0 instead of crashing
+    $todayPrescriptions = 0; 
+}
+
+// Fetch the 5 most recent prescriptions
+$recentPrescriptions = runQuery($conn, "SELECT * FROM prescriptions ORDER BY id DESC LIMIT 5");
+
 
 // ================= PURCHASE ORDER COUNTS =================
 $totalPOsRes = runQuery($conn, "SELECT COUNT(*) as total FROM purchase_order");
@@ -34,8 +61,20 @@ $openPOs = mysqli_fetch_assoc($openPOsRes)['total'];
 $poValueRes = runQuery($conn, "SELECT COALESCE(SUM(total), 0) as total_val FROM purchase_order_items");
 $poValue = mysqli_fetch_assoc($poValueRes)['total_val'];
 
+
+// ================= Sales Figures =================
+
+$currentMonthSalesRes = runQuery($conn, "
+    SELECT COALESCE(SUM(total_amount), 0) AS total_sales
+    FROM sales_order
+    WHERE MONTH(so_date) = MONTH(CURDATE())
+    AND YEAR(so_date) = YEAR(CURDATE())
+");
+
+$currentMonthSales = mysqli_fetch_assoc($currentMonthSalesRes)['total_sales'];
+
 // Fetch the 5 most recent purchase orders
-$recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC LIMIT 5");
+$recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_no DESC LIMIT 5");
 ?>
 
 <!DOCTYPE html>
@@ -57,7 +96,7 @@ $recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC 
             flex-direction: row;
         }
 
-        /* ================= NAVIGATION SIDEBAR (Identical to Item Page) ================= */
+        /* ================= NAVIGATION SIDEBAR ================= */
         .sidebar {
             width: 260px;
             background: #0f766e;
@@ -121,7 +160,7 @@ $recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC 
         /* ================= STATISTICAL CARDS ================= */
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -212,6 +251,15 @@ $recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC 
         }
         .status-open { background: #fef3c7; color: #d97706; }
         .status-completed { background: #d1fae5; color: #059669; }
+        
+        .btn-small {
+            padding: 4px 8px;
+            background: #2563eb;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }
 
         /* ================= RESPONSIVE MEDIA QUERIES ================= */
         @media (max-width: 768px) {
@@ -250,10 +298,12 @@ $recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC 
         <a href="item.php">Items</a>
         <a href="vendor.php">Vendor</a>
         <a href="customer_list.php">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
         <a href="sales_invoice.php">Sales Invoice</a>
         <a href="report.php">Report</a>
+        <a href="login_emp.php">Logout</a> 
     </div>
 
     <div class="main-content">
@@ -276,6 +326,11 @@ $recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC 
                 </div>
 
                 <div class="card">
+                    <h3>Today Prescriptions</h3>
+                    <h1 style="color: #2563eb;"><?php echo htmlspecialchars($todayPrescriptions); ?></h1>
+                </div>
+
+                <div class="card">
                     <h3>Total POs Issued</h3>
                     <h1><?php echo htmlspecialchars($totalPOs); ?></h1>
                 </div>
@@ -286,34 +341,36 @@ $recent_pos = runQuery($conn, "SELECT * FROM purchase_order ORDER BY po_id DESC 
                 </div>
 
                 <div class="card">
-                    <h3>Total Capital Value</h3>
-                    <h1>Rs. <?php echo number_format($poValue, 2); ?></h1>
+                    <h3>Total Sales Month to Date</h3>
+                    <h1>Rs. <?php echo number_format($currentMonthSales , 2); ?></h1>
                 </div>
             </div>
 
             <div class="dashboard-grid">
 
                 <div class="table-section">
-                    <h2>Recent Customers</h2>
+                    <h2>Recent Uploaded Prescriptions</h2>
                     <div class="table-responsive">
                         <table>
                             <tr>
                                 <th>ID</th>
-                                <th>Name</th>
-                                <th>City</th>
-                                <th>Contact</th>
+                                <th>Patient Name</th>
+                                <th>Contact No</th>
+                                <th>Action</th>
                             </tr>
-                            <?php if(mysqli_num_rows($customers) > 0) { ?>
-                                <?php while($row = mysqli_fetch_assoc($customers)){ ?>
+                            <?php if(mysqli_num_rows($recentPrescriptions) > 0) { ?>
+                                <?php while($row = mysqli_fetch_assoc($recentPrescriptions)){ ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($row['cus_id']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['fl_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['city']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['con_no']); ?></td>
+                                    <td><strong><?php echo htmlspecialchars($row['id']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($row['patient_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['contact_no']); ?></td>
+                                    <td>
+                                        <a class="btn-small" href="uploads/<?php echo urlencode($row['prescription_file']); ?>" target="_blank">View</a>
+                                    </td>
                                 </tr>
                                 <?php } ?>
                             <?php } else { ?>
-                                <tr><td colspan="4" style="text-align:center;">No recent customers found</td></tr>
+                                <tr><td colspan="4" style="text-align:center;">No recent prescriptions found</td></tr>
                             <?php } ?>
                         </table>
                     </div>
