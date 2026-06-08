@@ -348,15 +348,17 @@ $items = runQuery($conn, $query_str);
         <a href="item.php" class="active">Items</a>
         <a href="vendor.php">Vendor</a>
         <a href="customer_list.php">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
         <a href="sales_invoice.php">Sales Invoice</a>
         <a href="report.php">Report</a>
+        <a href="login_emp.php">Logout</a> 
     </div>
 
     <div class="main-content">
         <div class="top-bar">
-            <h2>Item Master System</h2>
+            <h2>Item Master</h2>
             <div class="action-buttons">
                 <button class="po-btn" onclick="openItemPopup()">+ Register Item</button>
             </div>
