@@ -254,10 +254,12 @@ $result = runQuery($conn, $sql);
         <a href="item.php">Items</a>
 	    <a href="vendor.php">Vendor</a>
         <a href="customer_list.php" class="active">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
-		<a href="sales_invoice.php">Sales Invoice</a>
-		<a href="report.php">Report</a>
+	    <a href="sales_invoice.php">Sales Invoice</a>
+        <a href="report.php">Report</a>
+        <a href="login_emp.php">Logout</a> 
     </div>
 
     <div class="main-content">
@@ -271,9 +273,6 @@ $result = runQuery($conn, $sql);
                     <button type="submit" class="po-btn">Search</button>
                 </form>
 
-                <a href="customer_registration.php">
-                    <button type="button" class="grn-btn">+ Add Customer</button>
-                </a>
             </div>
         </div>
 
