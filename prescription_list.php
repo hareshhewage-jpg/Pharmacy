@@ -191,12 +191,14 @@ if(!$result){
         <h2>💊 Drugs4U</h2>
         <a href="dashboard.php">Dashboard</a>
         <a href="item.php">Items</a>
-		<a href="vendor.php">Vendor</a>
+	    <a href="vendor.php">Vendor</a>
         <a href="customer_list.php">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php" class="active">Prescriptions</a>
-		<a href="sales_invoice.php">Sales Invoice</a>
-		<a href="report.php">Report</a>
+	    <a href="sales_invoice.php">Sales Invoice</a>
+        <a href="report.php">Report</a>
+        <a href="login_emp.php">Logout</a> 
     </div>
 
     <div class="main-content">
