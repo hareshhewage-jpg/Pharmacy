@@ -18,7 +18,7 @@ if(isset($_POST['login'])){
         $_SESSION['fl_name'] = $row['fl_name'];
         $_SESSION['email']   = $row['email'];
 
-        header("Location: dashboard.php");
+        header("Location: upload_prescription.php");
         exit;
 
     } else {
