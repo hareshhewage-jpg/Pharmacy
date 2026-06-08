@@ -347,15 +347,17 @@ $vendor_list = runQuery($conn, "SELECT * FROM vendor_master ORDER BY vendor_id D
         <a href="item.php">Items</a>
         <a href="vendor.php" class="active">Vendor</a>
         <a href="customer_list.php">Customers</a>
+        <a href="employee_reg.php">Employees</a>
         <a href="purchase_order.php">Purchase Orders</a>
         <a href="prescription_list.php">Prescriptions</a>
         <a href="sales_invoice.php">Sales Invoice</a>
         <a href="report.php">Report</a>
+        <a href="login_emp.php">Logout</a>  
     </div>
 
     <div class="main-content">
         <div class="top-bar">
-            <h2>Vendor Master System</h2>
+            <h2>Vendor Master</h2>
             <div class="action-buttons">
                 <button class="po-btn" onclick="openVendorPopup()">+ Register Vendor</button>
             </div>
